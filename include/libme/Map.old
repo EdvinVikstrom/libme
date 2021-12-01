@@ -1,0 +1,272 @@
+#ifndef LIBME_MAP_HPP
+  #define LIBME_MAP_HPP
+
+#include "Exception.hpp"
+#include "Pair.hpp"
+#include "Vector.hpp"
+
+namespace me {
+
+  template<typename Key, typename Value, class Alloc = DefaultAllocator<Pair<Key, Value>>>
+  class Map {
+
+  public:
+
+    typedef size_t Size;
+    typedef Pair<Key, Value> Node;
+    typedef Vector<Node> Container;
+    typedef Node* Iterator;
+    typedef const Node* ConstIterator;
+
+  protected:
+
+    Container m_nodes;
+
+  public:
+
+    constexpr Map(std::initializer_list<Node> nodes);
+    constexpr Map(const Map &map);
+    constexpr Map(Map &&map);
+    constexpr Map();
+
+    [[nodiscard]] constexpr Iterator data() const;
+    [[nodiscard]] constexpr Iterator begin() const;
+    [[nodiscard]] constexpr Iterator end() const;
+    [[nodiscard]] constexpr ConstIterator cbegin() const;
+    [[nodiscard]] constexpr ConstIterator cend() const;
+
+    constexpr Node& put(const Key &key, Value &&val);
+    constexpr Node& put(const Key &key, const Value &val);
+
+    constexpr void erase(const Key &key);
+    constexpr void clear();
+
+    [[nodiscard]] constexpr Iterator find(const Key &key) const;
+    [[nodiscard]] constexpr bool contains(const Key &key) const;
+
+    [[nodiscard]] constexpr Value& at(const Key &key);
+    [[nodiscard]] constexpr const Value& at(const Key &key) const;
+    [[nodiscard]] constexpr Value& at(const Key &key, Value &val);
+    [[nodiscard]] constexpr const Value& at(const Key &key, const Value &val) const;
+
+    [[nodiscard]] constexpr Size capacity() const;
+    [[nodiscard]] constexpr Size size() const;
+    [[nodiscard]] constexpr bool is_empty() const;
+
+    constexpr Value& operator[](const Key &key);
+
+    template<class Alloc2> [[nodiscard]] constexpr bool operator==(const Map<Key, Value, Alloc2> &map) const;
+    template<class Alloc2> [[nodiscard]] constexpr bool operator!=(const Map<Key, Value, Alloc2> &map) const;
+
+  };
+
+} // namespace me
+
+/* ------------- */
+/* class me::Map */
+/* ------------- */
+template<typename Key, typename Value, typename Alloc>
+constexpr me::Map<Key, Value, Alloc>::Map(std::initializer_list<Node> elements)
+  : m_nodes(elements)
+{
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr me::Map<Key, Value, Alloc>::Map(const Map &copy)
+  : m_nodes(copy.m_nodes)
+{
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr me::Map<Key, Value, Alloc>::Map(Map &&move)
+  : m_nodes(move.m_nodes)
+{
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr me::Map<Key, Value, Alloc>::Map()
+  : m_nodes()
+{
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Iterator me::Map<Key, Value, Alloc>::data() const
+{
+  return m_nodes.data();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Iterator me::Map<Key, Value, Alloc>::begin() const
+{
+  return m_nodes.begin();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Iterator me::Map<Key, Value, Alloc>::end() const
+{
+  return m_nodes.end();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Node& me::Map<Key, Value, Alloc>::put(const Key &key, Value &&value)
+{
+  for (Iterator i = m_nodes.begin(); i != m_nodes.end(); i++)
+  {
+    if (i->first == key)
+    {
+      i->second = static_cast<Value&&>(value);
+      return *i;
+    }
+  }
+  m_nodes.emplace_back(key, value);
+  return m_nodes.back();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Node& me::Map<Key, Value, Alloc>::put(const Key &key, const Value &value)
+{
+  for (Iterator i = m_nodes.begin(); i != m_nodes.end(); i++)
+  {
+    if (i->first == key)
+    {
+      i->second = value;
+      return *i;
+    }
+  }
+  m_nodes.emplace_back(key, value);
+  return m_nodes.back();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr void me::Map<Key, Value, Alloc>::erase(const Key &key)
+{
+  for (Iterator i = m_nodes.begin(); i != m_nodes.end(); i++)
+  {
+    if (i->first == key)
+    {
+      m_nodes.erase(i);
+      break;
+    }
+  }
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr void me::Map<Key, Value, Alloc>::clear()
+{
+  m_nodes.clear();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Iterator me::Map<Key, Value, Alloc>::find(const Key &key) const
+{
+  for (Iterator i = m_nodes.begin(); i != m_nodes.end(); i++)
+  {
+    if (i->first == key)
+      return i;
+  }
+  return nullptr;
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr bool me::Map<Key, Value, Alloc>::contains(const Key &key) const
+{
+  for (const Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return true;
+  }
+  return false;
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr Value& me::Map<Key, Value, Alloc>::at(const Key &key)
+{
+  for (Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return node.second;
+  }
+
+  throw RuntimeError("me::Map::at(): key not found");
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr const Value& me::Map<Key, Value, Alloc>::at(const Key &key) const
+{
+  for (const Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return node.second;
+  }
+
+  throw RuntimeError("me::Map::at(): key not found");
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr Value& me::Map<Key, Value, Alloc>::at(const Key &key, Value &val)
+{
+  for (Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return node.second;
+  }
+  return val;
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr const Value& me::Map<Key, Value, Alloc>::at(const Key &key, const Value &val) const
+{
+  for (const Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return node.second;
+  }
+  return val;
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Size me::Map<Key, Value, Alloc>::capacity() const
+{
+  return m_nodes.capacity();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr typename me::Map<Key, Value, Alloc>::Size me::Map<Key, Value, Alloc>::size() const
+{
+  return m_nodes.size();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr bool me::Map<Key, Value, Alloc>::is_empty() const
+{
+  return m_nodes.is_empty();
+}
+
+template<typename Key, typename Value, typename Alloc>
+constexpr Value& me::Map<Key, Value, Alloc>::operator[](const Key &key)
+{
+  for (Node &node : m_nodes)
+  {
+    if (node.first == key)
+      return node.second;
+  }
+  m_nodes.emplace_back(key, Value());
+  return m_nodes.back().second;
+}
+
+template<typename Key, typename Value, typename Alloc>
+template<class Alloc2>
+constexpr bool me::Map<Key, Value, Alloc>::operator==(const Map<Key, Value, Alloc2> &map) const
+{
+  return m_nodes == map.m_nodes;
+}
+
+template<typename Key, typename Value, typename Alloc>
+template<class Alloc2>
+constexpr bool me::Map<Key, Value, Alloc>::operator!=(const Map<Key, Value, Alloc2> &map) const
+{
+  return m_nodes != map.m_nodes;
+}
+/* end class me::Map */
+
+#endif

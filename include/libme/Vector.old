@@ -1,0 +1,381 @@
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Pointer
+me::Vector<Type, Alloc>::data() const
+{
+  return m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Iterator
+me::Vector<Type, Alloc>::begin()
+{
+  return m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Iterator
+me::Vector<Type, Alloc>::end()
+{
+  return m_end;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::ConstIterator
+me::Vector<Type, Alloc>::begin() const
+{
+  return m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::ConstIterator
+me::Vector<Type, Alloc>::end() const
+{
+  return m_end;
+}
+
+template<typename Type, typename Alloc>
+constexpr Type&
+me::Vector<Type, Alloc>::front()
+{
+  return *m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr const Type&
+me::Vector<Type, Alloc>::front() const
+{
+  return *m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr Type&
+me::Vector<Type, Alloc>::back()
+{
+  return *(m_end - 1);
+}
+
+template<typename Type, typename Alloc>
+constexpr const Type&
+me::Vector<Type, Alloc>::back() const
+{
+  return *(m_end - 1);
+}
+
+template<typename Type, typename Alloc>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::assign(const Type &val, Size num)
+{
+  clear();
+  reserve(num);
+
+  for (Size i = 0; i != num; i++)
+    m_begin[i] = move(val);
+  m_end = m_begin + num;
+  return *this;
+}
+
+template<typename Type, typename Alloc>
+template<typename Iter>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::assign(Iter first, Iter last)
+{
+  Size num = last - first;
+  clear();
+  reserve(num);
+
+  for (Size i = 0; i != num; i++)
+    m_begin[i] = first[i];
+  m_end = m_begin + num;
+  return *this;
+}
+
+template<typename Type, typename Alloc>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::assign(std::initializer_list<Type> list)
+{
+  return assign(list.begin(), list.end());
+}
+
+template<typename Type, typename Alloc>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::insert(ConstIterator pos, const Type &val)
+{
+  return insert(pos, val, 1);
+}
+
+template<typename Type, typename Alloc>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::insert(ConstIterator pos, const Type &val, Size num)
+{
+  LIBME_ASSERT(pos >= m_begin && pos <= m_end, "me::Vector::insert(): pos does not refer to this vector");
+
+  if (pos == m_end && num == 1)
+    push_back(val);
+  else
+  {
+    Size mov = m_end - pos;
+    Size len = length() + num;
+    reserve(len);
+
+    Pointer src = m_begin + (pos - m_begin);
+    memory::move(pos + num, pos, mov);
+    for (; num; num--)
+      *src++ = val;
+  }
+  return *this;
+}
+
+template<typename Type, typename Alloc>
+template<typename Iter>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::insert(ConstIterator pos, Iter first, Iter last)
+{
+  LIBME_ASSERT(pos >= m_begin && pos <= m_end, "me::Vector::insert(): pos does not refer to this vector");
+
+  Size num = last - first;
+  if (pos == m_end && num == 1)
+    push_back(*first);
+  else
+  {
+    Size mov = m_end - pos;
+    Size len = length() + num;
+    reserve(len);
+
+    Pointer src = m_begin + (pos - m_begin);
+    memory::move(pos + num, pos, mov);
+    while (first != last)
+      *src++ = *first++;
+  }
+  return *this;
+}
+
+template<typename Type, typename Alloc>
+constexpr me::Vector<Type, Alloc>&
+me::Vector<Type, Alloc>::insert(ConstIterator pos, std::initializer_list<Type> list)
+{
+  return insert(pos, list.begin(), list.end());
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Iterator
+me::Vector<Type, Alloc>::erase(ConstIterator pos)
+{
+  LIBME_ASSERT(pos >= m_begin && pos <= m_end, "me::Vector::erase(): pos does not refer to this vector");
+  return erase(pos, pos + 1);
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Iterator
+me::Vector<Type, Alloc>::erase(ConstIterator first, ConstIterator last)
+{
+  LIBME_ASSERT(first >= m_begin && last <= m_end, "me::Vector::erase(): first and last does not refer to this vector");
+
+  Size num = last - first;
+  Size len = length() - num;
+  memory::move(first, first + num, len);
+  m_end = m_begin + len;
+  return m_begin + (first - m_begin);
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::clear()
+{
+  for (Iterator i = m_begin; i != m_end; i++)
+    Traits::destroy(*i);
+  m_end = m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::push_back(const Type& val)
+{
+  Size len = length();
+  reserve(len + 1);
+  Traits::construct(&m_begin[len], val);
+  m_end += 1;
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::push_back(Type&& val)
+{
+  Size len = length();
+  reserve(len + 1);
+  Traits::construct(&m_begin[len], move(val));
+  m_end += 1;
+}
+
+template<typename Type, typename Alloc>
+template<typename... Args>
+constexpr void
+me::Vector<Type, Alloc>::emplace_back(const Args&... args)
+{
+  Size len = length();
+  reserve(len + 1);
+  Traits::construct(m_begin + len, args...);
+  m_end += 1;
+}
+
+template<typename Type, typename Alloc>
+template<typename... Args>
+constexpr void
+me::Vector<Type, Alloc>::emplace_back(Args&&... args)
+{
+  Size len = length();
+  reserve(len + 1);
+  Traits::construct(m_begin + len, forward<Args>(args)...);
+  m_end += 1;
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::pop_back()
+{
+  LIBME_ASSERT(!is_empty(), "me::Vector::pop_back(): cannot pop_back from an empty Vector");
+
+  m_end--;
+  Traits::destroy(*m_end);
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::resize(Size num)
+{
+  reserve(num);
+
+  for (Iterator i = m_end; i != m_capacity; i++)
+    Traits::construct(i);
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::resize(Size num, const Type &val)
+{
+  reserve(num);
+
+  for (Iterator i = m_end; i != m_capacity; i++)
+    *i = val;
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::reserve(Size new_cap)
+{
+  if (new_cap > capacity())
+  {
+    Size len = length();
+    Pointer new_data = Alloc::allocate(new_cap);
+    for (Size i = 0; i != len; i++)
+      new_data[i] = move(m_begin[i]);
+
+    Alloc::deallocate(m_begin);
+
+    m_begin = new_data;
+    m_end = m_begin + len;
+    m_capacity = m_end;
+  }
+}
+
+template<typename Type, typename Alloc>
+constexpr void
+me::Vector<Type, Alloc>::shrink_to_fit()
+{
+  Size len = length();
+  if (capacity() > len)
+  {
+    Pointer new_data = Alloc::allocate(len);
+    for (Size i = 0; i != len; i++)
+      new_data[i] = move(m_begin[i]);
+
+    Alloc::deallocate(m_begin);
+
+    m_begin = new_data;
+    m_end = m_begin + len;
+    m_capacity = m_end;
+  }
+}
+
+template<typename Type, typename Alloc>
+constexpr Type&
+me::Vector<Type, Alloc>::at(Size pos)
+{
+  LIBME_ASSERT(pos < length(), "me::Vector::at(): out of range");
+  return m_begin[pos];
+}
+
+template<typename Type, typename Alloc>
+constexpr const Type&
+me::Vector<Type, Alloc>::at(Size pos) const
+{
+  LIBME_ASSERT(pos < length(), "me::Vector::at(): out of range");
+  return m_begin[pos];
+}
+
+template<typename Type, typename Alloc>
+constexpr Type&
+me::Vector<Type, Alloc>::operator[](Size pos)
+{
+  LIBME_ASSERT(pos < length(), "me::Vector::operator[](): out of range");
+  return m_begin[pos];
+}
+
+template<typename Type, typename Alloc>
+constexpr const Type&
+me::Vector<Type, Alloc>::operator[](Size pos) const
+{
+  LIBME_ASSERT(pos < length(), "me::Vector::operator[](): out of range");
+  return m_begin[pos];
+}
+
+template<typename Type, typename Alloc>
+constexpr bool
+me::Vector<Type, Alloc>::is_empty() const
+{
+  return m_begin == m_end;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Size
+me::Vector<Type, Alloc>::length() const
+{
+  return m_end - m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Size
+me::Vector<Type, Alloc>::max_length() const
+{
+  return 1234567;
+}
+
+template<typename Type, typename Alloc>
+constexpr typename me::Vector<Type, Alloc>::Size
+me::Vector<Type, Alloc>::capacity() const
+{
+  return m_capacity - m_begin;
+}
+
+template<typename Type, typename Alloc>
+constexpr bool
+me::Vector<Type, Alloc>::operator==(const Vector &vec) const
+{
+  Size len = length();
+  if (len != vec.length())
+    return false;
+
+  for (Size i = 0; i != len; i++)
+  {
+    if (at(i) != vec.at(i))
+      return false;
+  }
+  return true;
+}
+
+template<typename Type, typename Alloc>
+constexpr bool
+me::Vector<Type, Alloc>::operator!=(const Vector &vec) const
+{
+  return operator==(vec);
+}
+

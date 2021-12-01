@@ -1,0 +1,4 @@
+add_files: [
+  "$(DIR)/Lexer.cpp"
+  "$(DIR)/Token.cpp"
+]

@@ -1,0 +1,17 @@
+project: {
+  name "libme"
+  version "2020"
+}
+
+set_output: "libme"
+set_build_directory: "$(DIR)/build"
+set_language: CXX
+set_kind: STATIC_LIBRARY
+set_compiler: LLVM
+set_linker: LLVM
+
+add_include_path: [ "$(DIR)/include" ]
+
+add_cflags: [ CXX ], [ "-DME_DEBUG" "-g" "-Wall" "-Wextra" "-std=c++20" ]
+
+source: "$(DIR)/src/MIConfig"

@@ -1,0 +1,4 @@
+source: "$(DIR)/lexer/MIConfig"
+source: "$(DIR)/parser/MIConfig"
+source: "$(DIR)/ast/MIConfig"
+source: "$(DIR)/interpreter/MIConfig"

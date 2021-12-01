@@ -1,0 +1,9 @@
+add_files: [
+  "$(DIR)/Call.cpp"
+  "$(DIR)/Integer.cpp"
+  "$(DIR)/Operator.cpp"
+  "$(DIR)/String.cpp"
+  "$(DIR)/Variable.cpp"
+  "$(DIR)/Function.cpp"
+  "$(DIR)/Scope.cpp"
+]

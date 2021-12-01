@@ -1,0 +1,6 @@
+/build/
+*.o
+*.d
+*.out
+libme.a
+Temp.txt

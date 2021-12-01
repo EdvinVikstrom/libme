@@ -1,0 +1,6 @@
+add_files: [
+  "$(DIR)/FileSystem.cpp"
+  "$(DIR)/Options.cpp"
+]
+
+source: "$(DIR)/lang/MIConfig"
