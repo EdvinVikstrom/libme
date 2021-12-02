@@ -1,3 +1,0 @@
-/home/edvin/Dokument/libme/tools/funcgen/CMakeFiles/rebuild_cache.dir
-/home/edvin/Dokument/libme/tools/funcgen/CMakeFiles/edit_cache.dir
-/home/edvin/Dokument/libme/tools/funcgen/CMakeFiles/FuncGenClangPlugin.dir

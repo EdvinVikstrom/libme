@@ -6,6 +6,7 @@
 #include "libme/TypeTraits.hpp"
 #include "libme/Memory.hpp"
 #include "libme/Exceptions.hpp"
+#include "libme/Functional.hpp"
 #include "libme/bits/NodeHandle.hpp"
 
 #include <initializer_list>
@@ -15,7 +16,7 @@ namespace me {
   template<typename Key, typename Value, typename Compare, typename Alloc>
   class MultiMap;
 
-  template<typename Key, typename Value, typename Compare, typename Alloc = DefaultAllocator<Value>>
+  template<typename Key, typename Value, typename Compare = less<Key>, typename Alloc = DefaultAllocator<Value>>
   class Map {
 
   public:
@@ -508,6 +509,7 @@ constexpr typename me::Map<Key, Value, Compare, Alloc>::SizeType
 {
   m_tree.remove(key);
   // TODO
+  return 0;
 }
 
 template<typename Key, typename Value, typename Compare, typename Alloc>
