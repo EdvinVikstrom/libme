@@ -13,36 +13,39 @@ namespace me {
 
   public:
 
+    typedef Type ValueType;
     typedef size_t SizeType;
 
   public:
 
     [[nodiscard]] static constexpr Type* allocate(SizeType num);
 
-    static constexpr void deallocate(Type* ptr);
+    static constexpr void deallocate(ValueType* ptr);
 
   };
 
-  template<typename Type, typename Alloc = DefaultAllocator<Type>>
+  template<typename Allocator>
   class AllocatorTraits {
 
   public:
 
-    typedef Type* Pointer;
-    typedef const Type* ConstPointer;
+    typedef typename Allocator::ValueType ValueType;
+    typedef ValueType* Pointer;
+    typedef const ValueType* ConstPointer;
     typedef size_t SizeType;
+    typedef ptrdiff_t DifferenceType;
     typedef void* VoidPointer;
 
   public:
 
-    [[nodiscard]] static constexpr Type* allocate(SizeType num);
+    [[nodiscard]] static constexpr ValueType* allocate(SizeType num);
 
-    static constexpr void deallocate(Type* ptr);
+    static constexpr void deallocate(ValueType* ptr);
 
     template<typename... Args>
-    static constexpr void construct(Type* ptr, Args&&... args);
+    static constexpr void construct(ValueType* ptr, Args&&... args);
 
-    static constexpr void destroy(Type* ptr);
+    static constexpr void destroy(ValueType* ptr);
 
   };
 
@@ -51,7 +54,7 @@ namespace me {
 
   private:
 
-    typename aligned_storage<sizeof(Type), alignof(Type)>::type m_value;
+    AlignedStorage_T<sizeof(Type), alignof(Type)> m_value;
 
   public:
 
@@ -92,33 +95,33 @@ constexpr void
 /* ------------------------- */
 /* class me::AllocatorTraits */
 /* ------------------------- */
-template<typename Type, typename Alloc>
-constexpr Type*
-  me::AllocatorTraits<Type, Alloc>::allocate(SizeType num)
+template<typename Allocator>
+constexpr typename me::AllocatorTraits<Allocator>::ValueType*
+  me::AllocatorTraits<Allocator>::allocate(SizeType num)
 {
-  return Alloc::allocate(num);
+  return Allocator::allocate(num);
 }
 
-template<typename Type, typename Alloc>
+template<typename Allocator>
 constexpr void
-  me::AllocatorTraits<Type, Alloc>::deallocate(Type* ptr)
+  me::AllocatorTraits<Allocator>::deallocate(ValueType* ptr)
 {
-  return Alloc::deallocate(ptr);
+  return Allocator::deallocate(ptr);
 }
 
-template<typename Type, typename Alloc>
+template<typename Allocator>
 template<typename... Args>
 constexpr void
-  me::AllocatorTraits<Type, Alloc>::construct(Type* ptr, Args&&... args)
+  me::AllocatorTraits<Allocator>::construct(ValueType* ptr, Args&&... args)
 {
-  ::new ((void*) ptr) Type(static_cast<Args&&>(args)...);
+  ::new ((void*) ptr) ValueType(static_cast<Args&&>(args)...);
 }
 
-template<typename Type, typename Alloc>
+template<typename Allocator>
 constexpr void
-  me::AllocatorTraits<Type, Alloc>::destroy(Type* ptr)
+  me::AllocatorTraits<Allocator>::destroy(ValueType* ptr)
 {
-  ptr->~Type();
+  ptr->~ValueType();
 }
 /* end class me::AllocatorTraits */
 

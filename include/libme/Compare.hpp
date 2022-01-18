@@ -2,6 +2,7 @@
   #define LIBME_COMPARE_HPP
 
 #include "libme/TypeTraits.hpp"
+#include "libme/Concepts.hpp"
 
 namespace me {
 
@@ -22,7 +23,7 @@ namespace me {
       constexpr UnspecifiedParam(UnspecifiedParam*) noexcept { };
     };
 
-  }
+  } // namespace cmp_cat
 
   class PartialOrdering {
 
@@ -204,31 +205,65 @@ namespace me {
   };
 
   namespace detail {
-    template<uint32_t> struct common_cmp_cat { using type = void; };
-    template<> struct common_cmp_cat<0U> { using type = StrongOrdering; };
-    template<> struct common_cmp_cat<2U> { using type = PartialOrdering; };
-    template<> struct common_cmp_cat<4U> { using type = WeakOrdering; };
-    template<> struct common_cmp_cat<6U> { using type = PartialOrdering; };
+    template<uint32_t> struct CommonCmpCat { using Type = void; };
+    template<> struct CommonCmpCat<0U> { using Type = StrongOrdering; };
+    template<> struct CommonCmpCat<2U> { using Type = PartialOrdering; };
+    template<> struct CommonCmpCat<4U> { using Type = WeakOrdering; };
+    template<> struct CommonCmpCat<6U> { using Type = PartialOrdering; };
   }
 
   template<typename... Types>
-  struct common_comparsion_category : detail::common_cmp_cat<(0U | ... | (
-      is_same<Types, StrongOrdering>::value ? 0U :
-      is_same<Types, WeakOrdering>::value ? 4U :
-      is_same<Types, PartialOrdering>::value ? 2U : 1U))> { };
+  struct CommonComparsionCategory : detail::CommonCmpCat<(0U | ... | (
+      is_same_v<Types, StrongOrdering> ? 0U :
+      is_same_v<Types, WeakOrdering> ? 4U :
+      is_same_v<Types, PartialOrdering> ? 2U : 1U))> { };
 
-  template<typename Type, typename Category = PartialOrdering>
-  concept ThreeWayComparable = false; // TODO
-  template<typename Type1, typename Type2, typename Category = PartialOrdering>
-  concept ThreeWayComparableWith = false; // TODO
+  template<typename... Types>
+  using CommonComparsionCategory_T = typename CommonComparsionCategory<Types...>::Type;
+
+  template<typename T, typename U = T>
+  using CompareThreeWayResult_T = decltype(
+    declval<const RemoveReference_T<T>&>() <=>
+    declval<const RemoveReference_T<U>&>());
+
+  template<typename T, typename U = T>
+  struct CompareThreeWayResult { };
+
+  template<typename T, typename U>
+    requires requires { typename CompareThreeWayResult_T<T, U>; }
+  struct CompareThreeWayResult<T, U> {
+    using Type = CompareThreeWayResult_T<T, U>;
+  };
+
+  template<typename T, typename Cat>
+  concept __CompareAs = SameAs<CommonComparsionCategory_T<T, Cat>, Cat>;
+
+  template<typename T, typename Cat = PartialOrdering>
+  concept ThreeWayComparable = __WeaklyEqualityComparableWith<T, T> &&
+    __PartiallyOrderedWith<T, T> && requires(const RemoveReference_T<T> &a, const RemoveReference_T<T> &b) {
+      { a <=> b } -> __CompareAs<Cat>;
+    };
+
+  template<typename T, typename U, typename Cat = PartialOrdering>
+  concept ThreeWayComparableWith = ThreeWayComparable<T, Cat> &&
+    ThreeWayComparable<U, Cat> &&
+    CommonReferenceWith<const RemoveReference_T<T>&, const RemoveReference_T<U>&> &&
+    ThreeWayComparable<CommonReference_T<const RemoveReference_T<T>&, const RemoveReference_T<U>&>, Cat> &&
+    __WeaklyEqualityComparableWith<T, U> &&
+    __PartiallyOrderedWith<T, U> &&
+    requires(const RemoveReference_T<T> &t, const RemoveReference_T<U> &u) {
+      { t <=> u } -> __CompareAs<Cat>;
+      { u <=> t } -> __CompareAs<Cat>;
+    };
 
   template<typename Type1, typename Type2>
   constexpr auto synth_three_way(const Type1 &lhs, const Type2 &rhs);
 
   template<typename Type>
-  using synth_three_way_t = decltype(synth_three_way(declval<Type&>(), declval<Type&>()));
+  using SynthThreeWayResult = decltype(synth_three_way(declval<Type&>(), declval<Type&>()));
 
-}
+} // namespace me
+// Implementations:
 
 /* -------------------------- */
 /* class me::PartialOrdering */
@@ -270,4 +305,4 @@ constexpr auto
     return WeakOrdering::equivalent;
 }
 
-#endif
+#endif // LIBME_COMPARE_HPP

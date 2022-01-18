@@ -1,0 +1,341 @@
+#ifndef LIBME_CONCEPTS_HPP
+  #define LIBME_CONCEPTS_HPP
+
+#include "libme/TypeTraits.hpp"
+
+namespace me {
+
+  template<typename T, typename U>
+    concept __SameAsImpl = is_same_v<T, U>;
+
+  template<typename T, typename U>
+    concept SameAs = __SameAsImpl<T, U> && __SameAsImpl<U, T>;
+
+  template<typename Derived, typename Base>
+    concept DerivedFrom =
+      is_base_of_v<Base, Derived> &&
+      is_convertible_v<const volatile Derived*, const volatile Base*>;
+
+  template<typename From, typename To>
+    concept ConvertibleTo =
+      is_convertible_v<From, To> &&
+      requires {
+	static_cast<To>(declval<From>());
+      };
+
+  template<typename T, typename U>
+    concept CommonReferenceWith =
+      SameAs<common_reference_t<T, U>, common_reference_t<U, T>> &&
+      ConvertibleTo<T, common_reference_t<T, U>> &&
+      ConvertibleTo<U, common_reference_t<T, U>>;
+
+  template<typename T, typename U>
+    concept CommonWith =
+      SameAs<common_type_t<T, U>, common_type_t<U, T>> &&
+      requires {
+	static_cast<common_type_t<T, U>>(declval<T>());
+	static_cast<common_type_t<T, U>>(declval<U>());
+      } &&
+      CommonReferenceWith<add_lvalue_reference_t<const T>, add_lvalue_reference_t<const U>> &&
+      CommonReferenceWith<add_lvalue_reference<common_type_t<T, U>>, common_reference_t<
+	add_lvalue_reference_t<const T>,
+	add_lvalue_reference_t<const U>>>;
+
+  template<typename T>
+    concept Integral = is_integral_v<T>;
+
+  template<typename T>
+    concept SignedIntegral = Integral<T> && is_signed_v<T>;
+
+  template<typename T>
+    concept UnsignedIntegral = Integral<T> && !SignedIntegral<T>;
+
+  template<typename T>
+    concept FloatingPoint = is_floating_point_v<T>;
+
+  template<typename LHS, typename RHS>
+    concept AssignableFrom =
+      is_lvalue_reference_v<LHS> &&
+      CommonReferenceWith<const remove_reference_t<LHS>&, const remove_reference_t<RHS>&> &&
+      requires(LHS lhs, RHS &&rhs) {
+	{ lhs = forward<RHS>(rhs) } -> SameAs<LHS>;
+      };
+
+  namespace ranges {
+
+    inline namespace __cust {
+
+      struct __Swap {
+      };
+
+    }
+
+    inline namespace __cust {
+      inline constexpr __Swap swap = { };
+    }
+
+  } // namespace ranges
+
+  template<typename T>
+    concept Swappable = requires(T &a, T &b) { ranges::swap(a, b); };
+
+  template<typename T, typename U>
+    concept SwappableWith =
+      CommonReferenceWith<T, U> &&
+      requires(T &&t, U &&u) {
+	ranges::swap(forward<T>(t), forward<T>(t));
+	ranges::swap(forward<U>(u), forward<U>(u));
+	ranges::swap(forward<T>(t), forward<T>(t));
+	ranges::swap(forward<T>(t), forward<T>(t));
+      };
+
+  template<typename T>
+    concept Destructible = true;
+
+  template<typename T, typename... Args>
+    concept ConstructibleFrom = true;
+
+  template<typename T>
+    concept DefaultInitializable = true;
+
+  template<typename T>
+    concept MoveConstructible = true;
+
+  template<typename T>
+    concept CopyConstructible = true;
+
+  // comparsion concepts
+
+  template<typename T>
+    concept EqualityComparable = true;
+
+  template<typename T, typename U>
+    concept EqualityComparableWith = true;
+
+  template<typename T>
+    concept TotallyOrdered = true;
+
+  template<typename T, typename U>
+    concept TotallyOrderedWith = true;
+
+  // object concepts
+
+  template<typename T>
+    concept Movable = true;
+
+  template<typename T>
+    concept Copyable = true;
+
+  template<typename T>
+    concept Semiregular = true;
+
+  template<typename T>
+    concept Regular = true;
+
+  // callable concepts
+
+  template<typename F, typename... Args>
+    concept Invocable = true;
+
+  template<typename F, typename... Args>
+    concept RegularInvocable = true;
+
+  template<typename F, typename... Args>
+    concept Predicate = true;
+
+  template<typename R, typename T, typename U>
+    concept Relation = true;
+
+  template<typename R, typename T, typename U>
+    concept EquivalenceRelation = true;
+
+  template<typename R, typename T, typename U>
+    concept StrictWeakOrder = true;
+
+  //namespace helper {
+
+  //  template<typename T, typename U>
+  //  concept __SameAs = is_same<T, U>::value;
+
+  //}
+
+  //template<typename T, typename U>
+  //concept SameAs = helper::__SameAs<T, U> && helper::__SameAs<U, T>;
+
+  //template<typename Derived, typename Base>
+  //concept DerivedFrom = is_base_of<Base, Derived>::value && is_convertible<const volatile Derived*, const volatile Base*>::value;
+
+  //template<typename From, typename To>
+  //concept ConvertibleTo = is_convertible<From, To>::value && requires { static_cast<To>(declval<From>()); };
+
+  //template<typename T, typename U>
+  //concept CommonReferenceWith =
+  //  SameAs<typename common_reference<T, U>::type, typename common_reference<U, T>::type> &&
+  //  ConvertibleTo<T, typename common_reference<T, U>::type> &&
+  //  ConvertibleTo<U, typename common_reference<T, U>::type>;
+
+  //// concept common_with = 
+
+  //template<typename Type>
+  //concept Integral = is_integral<Type>::value;
+
+  //template<typename Type>
+  //concept SignedIntegral = is_integral<Type>::value && is_signed<Type>::value;
+
+  //template<typename Type>
+  //concept UnsignedIntegral = is_integral<Type>::value && is_unsigned<Type>::value;
+
+  //template<typename Type>
+  //concept FloatingPoint = is_floating_point<Type>::value;
+
+  //template<typename LHS, typename RHS>
+  //concept AssignableFrom = 
+  //  is_lvalue_reference<LHS>::value &&
+  //  CommonReferenceWith<
+  //    const typename remove_reference<LHS>::type&,
+  //    const typename remove_reference<RHS>::type&> &&
+  //  requires(LHS lhs, RHS &&rhs) {
+  //    { lhs = forward<RHS>(rhs) } -> SameAs<LHS>;
+  //  };
+
+  //namespace ranges {
+
+  //  //struct SwapFn {
+  //  //  template<typename T, typename U>
+  //  //  void operator()(T &&t1, U &&u1)
+  //  //  {
+  //  //    swap(forward<T>(t1), forward<U>(u1));
+  //  //  }
+  //  //};
+
+  //  //inline namespace idk {
+  //  //  inline constexpr __Swap swap = {};
+  //  //}
+
+  //} // namespace ranges
+
+  //template<typename T>
+  //concept Swappable = true;
+  ////concept swappable = requires(Type &a, Type &b) {
+  ////  ranges::swap(a, b);
+  ////};
+
+  //template<typename T>
+  //concept Destructible = is_nothrow_destructible<T>::value;
+
+  //template<typename T, typename... Args>
+  //concept ConstructibleFrom = Destructible<T> && is_constructible<T, Args...>::value;
+
+  //template<typename T>
+  //concept DefaultInitializable = ConstructibleFrom<T> && requires { T{}; } &&
+  //  requires { ::new (static_cast<void*>(nullptr)) T; };
+
+  //template<typename T>
+  //concept MoveConstructible = ConstructibleFrom<T, T> && ConvertibleTo<T, T>;
+
+  //template<typename T>
+  //concept CopyConstructible =
+  //  MoveConstructible<T> &&
+  //  ConstructibleFrom<T, T&> && ConvertibleTo<T&, T> &&
+  //  ConstructibleFrom<T, const T&> && ConvertibleTo<const T&, T> &&
+  //  ConstructibleFrom<T, const T> && ConvertibleTo<const T, T>;
+
+  //namespace helper {
+
+  //  template<typename B>
+  //  concept __BooleanTestableImpl = ConvertibleTo<B, bool>;
+
+  //  template<typename B>
+  //  concept __BooleanTestable = __BooleanTestableImpl<B> && requires(B &&b) {
+  //    { !forward<B>(b) } -> __BooleanTestableImpl;
+  //  };
+
+  //}
+
+  ///* -------------------------------- */
+  ///*       Comparsion concepts        */
+  ///* -------------------------------- */
+
+  //template<typename T, typename U>
+  //concept __WeaklyEqualityComparableWith = SameAs<T, U> && requires(T a, U b) {
+  //  { bool(a == b) };
+  //};
+
+  //template<typename T>
+  //concept EqualityComparable = __WeaklyEqualityComparableWith<T, T>;
+
+  //template<typename T, typename U>
+  //concept EqualityComparableWith =
+  //  EqualityComparable<T> &&
+  //  EqualityComparable<U> &&
+  //  CommonReferenceWith<
+  //    const typename remove_reference<T>::type&,
+  //    const typename remove_reference<U>::type&> &&
+  //  EqualityComparable<
+  //    typename common_reference<
+  //      const typename remove_reference<T>::type&,
+  //      const typename remove_reference<U>::type&>::type> &&
+  //  __WeaklyEqualityComparableWith<T, U>; 
+
+  //template<typename T, typename U>
+  //concept __PartiallyOrderedWith = requires(const remove_reference<T> &t, const remove_reference<U> &u) {
+  //  { t < u} -> helper::__BooleanTestable;
+  //  { t > u} -> helper::__BooleanTestable;
+  //  { t <= u} -> helper::__BooleanTestable;
+  //  { t >= u} -> helper::__BooleanTestable;
+  //  { u < t} -> helper::__BooleanTestable;
+  //  { u > t} -> helper::__BooleanTestable;
+  //  { u <= t} -> helper::__BooleanTestable;
+  //  { u >= t} -> helper::__BooleanTestable;
+  //};
+
+  //template<typename T>
+  //concept TotallyOrdered = EqualityComparable<T> && __PartiallyOrderedWith<T, T>;
+
+  //template<typename T, typename U>
+  //concept totally_ordered_with = TotallyOrdered<T> && TotallyOrdered<U> &&
+  //  EqualityComparableWith<T, U> &&
+  //  TotallyOrdered<common_reference<
+  //    const typename remove_reference<T>::type&,
+  //    const typename remove_reference<U>::type&>> &&
+  //  __PartiallyOrderedWith<T, U>;
+
+  ///* -------------------------------- */
+  ///*         Object concepts          */
+  ///* -------------------------------- */
+
+  //template<typename T>
+  //concept Movable =
+  //  is_object<T>::value &&
+  //  MoveConstructible<T> &&
+  //  AssignableFrom<T&, T> &&
+  //  Swappable<T>;
+
+  //template<typename T>
+  //concept Copyable =
+  //  CopyConstructible<T> &&
+  //  Movable<T> &&
+  //  AssignableFrom<T&, T&> &&
+  //  AssignableFrom<T&, const T&> &&
+  //  AssignableFrom<T&, const T>;
+
+  //template<typename T>
+  //concept Semiregular = Copyable<T> && DefaultInitializable<T>;
+
+  //template<typename T>
+  //concept Regular = Semiregular<T> && EqualityComparable<T>;
+
+  ///* -------------------------------- */
+  ///*                                  */
+  ///* -------------------------------- */
+
+  //template<typename T>
+  //concept __Referenceable = !SameAs<T, void>;
+
+  //template<typename T>
+  //concept __SignedIntegerLike = SignedIntegral<T>;
+
+
+} // namespace me
+
+#endif

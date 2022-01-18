@@ -3,58 +3,70 @@
 
 #include "libme/TypeTraits.hpp"
 #include "libme/Utility.hpp"
+#include "libme/Iterator.hpp"
 
-namespace me::memory {
+namespace me {
+
+  template<typename Ptr> struct PointerTraits;
+  template<typename T> struct PointerTraits<T*>;
 
   template<typename T>
-  struct default_delete {
-    void operator()(T* ptr)
-    {
-      delete ptr;
-    }
-  };
+  constexpr T* to_address(T* ptr) noexcept;
 
-  template<typename TA>
-  struct default_delete<TA[]> {
-    void operator()(TA arr[])
-    {
-      delete[] arr;
-    }
-  };
+  template<typename Ptr>
+  constexpr auto to_address(const Ptr &ptr) noexcept;
 
-  template<typename Type> constexpr void copy(Type* dest, Type* begin, Type* end);
-  template<typename Type> constexpr void move(Type* dest, Type* src, me::size_t num);
+  void* align(size_t alignment, size_t size, void* &ptr, size_t &space);
 
-  template<typename Type> constexpr bool in_range(const Type* ptr, const Type* begin, const Type* end);
+  template<size_t N, typename T>
+  [[nodiscard]] constexpr T* assume_aligned(T* ptr);
 
-} // namespace me::memory
+  template<typename T>
+  constexpr T* addressof(T &val) noexcept;
 
-template<typename Type>
-constexpr void me::memory::copy(Type* dest, Type* begin, Type* end)
-{
-  /* TODO: use memcpy if not a constant expression */
-  while (begin != end)
-    *dest++ = *begin++;
-}
+  template<typename T>
+  const T* addressof(T &&val) = delete;
 
-template<typename Type>
-constexpr void me::memory::move(Type* dest, Type* src, me::size_t num)
-{
-  if (dest < src)
-  {
-    for (size_t i = 0; num--; i++)
-      dest[i] = move(src[i]);
-  }else if (dest > src)
-  {
-    for (size_t i = num - 1; num--; i--)
-      dest[i] = move(src[i]);
+  template<typename I>
+  concept NothrowInputIterator = true; // TODO
+
+  template<typename I>
+  concept NothrowForwardIterator = true; // TODO
+
+  template<typename S, typename I>
+  concept NothrowSentinelFor = true; // TODO
+
+  template<typename R>
+  concept NothrowInputRange = true; // TODO
+
+  template<typename R>
+  concept NothrowForwardRange = true; // TODO
+
+  template<typename NoThrowForwardIterator>
+  void uninitialized_default_construct(NoThrowForwardIterator first, NoThrowForwardIterator last);
+
+  template<typename ExecutionPolicy, typename NoThrowForwardIterator>
+  void uninitialized_default_construct(ExecutionPolicy &&exec, NoThrowForwardIterator first, NoThrowForwardIterator last);
+
+  template<typename NoThrowForwardIterator, typename Size>
+  NoThrowForwardIterator uninitialized_default_construct_n(NoThrowForwardIterator first, Size num);
+
+  template<typename ExecutionPolicy, typename NoThrowForwardIterator, typename Size>
+  NoThrowForwardIterator uninitialized_default_construct_n(ExecutionPolicy &&exec, NoThrowForwardIterator first, Size num);
+
+  namespace ranges {
+
+    template<NothrowForwardIterator I, NothrowSentinelFor<I> S>
+      requires DefaultInitializable<IterValue_T<I>>
+    I uninitialized_default_construct(I first, S last);
+
+    template<NothrowForwardRange R>
+      requires DefaultInitializable<RangeValue_T<R>>
+    I uninitialized_default_construct(I first, S last);
+
   }
-}
 
-template<typename Type>
-constexpr bool in_range(const Type* ptr, const Type* begin, const Type* end)
-{
-  return ptr >= begin && ptr <= end;
-}
+} // namespace me
+// Implementations:
 
-#endif
+#endif // LIBME_MEMORY_HPP

@@ -320,6 +320,24 @@ namespace me {
 
   constexpr bool is_constant_evaluated() noexcept;
 
+  // is valid expression
+
+  template<template<typename...> typename Template, typename... Args, typename = Template<Args...>>
+  TrueType __sfinae_test_impl(int);
+  template<template<typename...> typename, typename...>
+  FalseType __sfinae_test_impl(...);
+
+  template<template<typename...> typename Template, typename... Args>
+  using __IsValidExpression = decltype(__sfinae_test_impl<Template, Args...>(0));
+
+  // is primary template
+
+  template<typename T>
+  using __TestForPrimaryTemplate = EnableIf_T<IsSame<T, typename T::__primary_template>::value>;
+
+  template<typename T>
+  using __IsPrimaryTemplate = __IsValidExpression<__TestForPrimaryTemplate, T>;
+
 
   /* +------------------------------+ */
   /* |       Implementations        | */

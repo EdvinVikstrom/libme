@@ -1,154 +1,288 @@
 #ifndef LIBME_UTILITY_HPP
   #define LIBME_UTILITY_HPP
 
-#include "libme/TypeTraits.hpp"
-
-#include <memory>
+#include "libme/Compare.hpp"
+#include "libme/InitializerList.hpp"
+#include "libme/Limits.hpp"
 
 namespace me {
 
   template<typename T>
-  constexpr T min(T a, T b);
-
-  template<typename T>
-  constexpr T max(T a, T b);
-
-  template<typename C>
-  constexpr bool is_digit(C chr);
-
-  template<typename C>
-  constexpr bool is_ascii(C chr);
-
-  template<typename T>
-  constexpr T* to_address(T* ptr);
-
-  template<typename T>
-  constexpr T* to_address(const T &val);
-
-  template<typename T>
-  constexpr T&& forward(typename remove_reference<T>::type &val);
-
-  template<typename T>
-  constexpr T&& forward(typename remove_reference<T>::type &&val);
-
-  template<typename T>
-  constexpr typename remove_reference<T>::type&& move(T &&val);
-
-  template<typename T>
   constexpr void swap(T &a, T &b)
-    noexcept
-    requires is_move_constructible<T>::value && is_move_assignable<T>::value;
+    noexcept(is_nothrow_move_constructible_v<T> && is_nothrow_move_assignable_v<T>)
+    requires is_move_constructible_v<T> && is_move_assignable_v<T>;
+
+  template<typename T, size_t N>
+  constexpr void swap(T (&a)[N], T (&b)[N])
+    noexcept(is_nothrow_swappable_v<T>)
+    requires is_swappable_v<T>;
+
+  template<typename T, typename U = T>
+  constexpr T exchange(T &obj, U &&new_val)
+    noexcept(is_nothrow_move_constructible_v<T> && is_nothrow_assignable_v<T&, U>);
 
   template<typename T>
-  constexpr void swap_ranges(T* begin, T* end, T* with);
+  constexpr T&& forward(RemoveReference_T<T> &t) noexcept;
 
   template<typename T>
-  constexpr void fill(T* data, size_t num, const T &val);
+  constexpr T&& forward(RemoveReference_T<T> &&t) noexcept;
 
   template<typename T>
-  constexpr bool in_range(T* ptr, T* first, T* last);
+  constexpr RemoveReference_T<T>&& move(T &&t) noexcept;
+
+  template<typename T>
+  constexpr Conditional_T<!is_nothrow_move_constructible_v<T> && is_copy_constructible_v<T>, const T&, T&&>
+    move_if_noexcept(T &x) noexcept;
+
+  template<typename T>
+  constexpr AddConst_T<T>& as_const(T &t) noexcept;
+
+  template<typename T>
+  constexpr void as_const(const T&&) = delete;
+
+  template<typename T>
+  AddRValueReference_T<T> declval() noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_equal(T t, U u) noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_not_equal(T t, U u) noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_less(T t, U u) noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_greater(T t, U u) noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_less_equal(T t, U u) noexcept;
+
+  template<typename T, typename U>
+  constexpr bool cmp_greater_equal(T t, U u) noexcept;
+
+  template<typename R, typename T>
+  constexpr bool in_range(T t) noexcept;
+
+  template<typename T>
+  constexpr UnderlyingType_T<T> to_underlying(T value) noexcept;
+
+  template<typename T, T...>
+  class IntegerSequence;
+
+  template<size_t... I>
+  using IndexSequence = IntegerSequence<size_t, I...>;
+
+  template<typename T, T N>
+  using MakeIntegerSequence = IntegerSequence<T, 0>;
+
+  template<size_t N>
+  using MakeIndexSequence = MakeIntegerSequence<size_t, N>;
+
+  template<typename... T>
+  using IndexSequenceFor = MakeIndexSequence<sizeof...(T)>;
+
+  /* +------------------------------+ */
+  /* |            Tuple             | */
+  /* +------------------------------+ */
+
+  // TODO: tuple stuff under here:
+
+  struct PiecewiseConstruct_T {
+    explicit PiecewiseConstruct_T() = default;
+  };
+  inline constexpr PiecewiseConstruct_T piecewise_construct { };
+
+  template<typename... Types>
+  class Tuple; // defined in "libme/Tuple.hpp"
+
+  struct InPlace_T {
+    explicit InPlace_T() = default;
+  };
+  inline constexpr InPlace_T in_place { };
+
+  template<typename T>
+  struct InPlaceType_T {
+    explicit InPlaceType_T() = default;
+  };
+  template<typename T> inline constexpr InPlaceType_T<T> in_place_type { };
+
+  template<size_t I>
+  struct InPlaceIndex_T {
+    explicit InPlaceIndex_T() = default;
+  };
+  template<size_t I> inline constexpr InPlaceIndex_T<I> in_place_index { };
 
 } // namespace me
+// Implementations:
 
-template<typename T>
-constexpr T
-  me::min(T a, T b)
-{
-  return a < b ? a : b;
-}
+/* class me::IntegerSequence */
 
-template<typename T>
-constexpr T
-  me::max(T a, T b)
-{
-  return a > b ? a : b;
-}
+template<typename T, T... Vals>
+class me::IntegerSequence {
 
-template<typename C>
-constexpr bool
-  me::is_digit(C chr)
-{
-  return chr >= C('0') && chr <= C('9');
-}
+  /* Types */
+public:
 
-template<typename C>
-constexpr bool
-  me::is_ascii(C chr)
-{
-  return (chr >= C('A') && chr <= C('Z')) || (chr >= C('a') && chr <= C('z'));
-}
+  typedef T ValueType;
 
-template<typename T>
-constexpr T*
-  me::to_address(T* ptr)
-{
-  static_assert(!std::is_function<T>::value);
-  return ptr;
-}
+  /* Functions */
+public:
 
-template<typename T>
-constexpr T*
-  me::to_address(const T &val)
-{
-  if constexpr (requires{std::pointer_traits<T>::to_address(val);})
-    return std::pointer_traits<T>::pointer_to(val);
-  else
-    return val.operator->();
-}
+  static constexpr size_t length() noexcept
+  {
+    return sizeof...(Vals);
+  }
 
-template<typename T>
-constexpr T&&
-  me::forward(typename remove_reference<T>::type &val)
-{
-  return static_cast<T&&>(val);
-}
+};
 
-template<typename T>
-constexpr T&&
-  me::forward(typename remove_reference<T>::type &&val)
-{
-  return static_cast<T&&>(val);
-}
-
-template<typename T>
-constexpr typename me::remove_reference<T>::type&&
-  me::move(T &&val)
-{
-  return static_cast<typename remove_reference<T>::type&&>(val);
-}
+/* end class me::IntegerSequence */
 
 template<typename T>
 constexpr void
   me::swap(T &a, T &b)
-  noexcept
-  requires is_move_constructible<T>::value && is_move_assignable<T>::value
+  noexcept(is_nothrow_move_constructible_v<T> && is_nothrow_move_assignable_v<T>)
+  requires is_move_constructible_v<T> && is_move_assignable_v<T>
 {
   T tmp(move(a));
   a = move(b);
   b = move(tmp);
 }
 
-template<typename T>
+template<typename T, me::size_t N>
 constexpr void
-  me::swap_ranges(T* begin, T* end, T* with)
+  me::swap(T (&a)[N], T (&b)[N])
+  noexcept(is_nothrow_swappable_v<T>)
+  requires is_swappable_v<T>
 {
-  while (begin != end)
-    swap(*begin++, *with++);
+  for (size_t i = 0; i != N; i++) // TODO
+    swap(a[i], b[i]);
+}
+
+template<typename T, typename U>
+constexpr T
+  me::exchange(T &obj, U &&new_val)
+  noexcept(is_nothrow_move_constructible_v<T> && is_nothrow_assignable_v<T&, U>)
+{
+  T old = move(obj);
+  obj = forward<U>(new_val);
+  return old;
 }
 
 template<typename T>
-constexpr void
-  me::fill(T* data, size_t num, const T &val)
+constexpr T&&
+  me::forward(RemoveReference_T<T> &t)
+  noexcept
 {
-  for (size_t i = 0; i != num; i++)
-    data[i] = val;
+  return static_cast<T&&>(t);
 }
 
 template<typename T>
+constexpr T&&
+  me::forward(RemoveReference_T<T> &&t)
+  noexcept
+{
+  return static_cast<T&&>(t);
+}
+
+template<typename T>
+constexpr me::RemoveReference_T<T>&&
+  me::move(T &&t)
+  noexcept
+{
+  return static_cast<RemoveReference_T<T>&&>(t);
+}
+
+namespace me { // Why do we need to have namespace here? Stupid C++...
+  template<typename T>
+  constexpr Conditional_T<!is_nothrow_move_constructible_v<T> && is_copy_constructible_v<T>, const T&, T&&>
+    move_if_noexcept(T &x)
+    noexcept
+  {
+    if constexpr (noexcept(move(x)))
+      return move(x);
+    return x;
+  }
+}
+
+template<typename T>
+constexpr me::AddConst_T<T>&
+  me::as_const(T &t)
+  noexcept
+{
+  return t;
+}
+
+template<typename T, typename U>
 constexpr bool
-  me::in_range(T* ptr, T* first, T* last)
+  me::cmp_equal(T t, U u)
+  noexcept
 {
-  return ptr >= first && ptr < last;
+  using UnsignedT = MakeUnsigned_T<T>;
+  using UnsignedU = MakeUnsigned_T<U>;
+
+  if constexpr (is_signed_v<T> == is_signed_v<U>)
+    return t == u;
+  else if constexpr (is_signed_v<T>)
+    return t < 0 ? false : UnsignedT(t) == u;
+  else
+    return u < 0 ? false : t == UnsignedU(u);
 }
 
-#endif
+template<typename T, typename U>
+constexpr bool
+  me::cmp_not_equal(T t, U u)
+  noexcept
+{
+  return !cmp_equal(t, u);
+}
+
+template<typename T, typename U>
+constexpr bool
+  me::cmp_less(T t, U u)
+  noexcept
+{
+  using UnsignedT = MakeUnsigned_T<T>;
+  using UnsignedU = MakeUnsigned_T<U>;
+
+  if constexpr (is_signed_v<T> == is_signed_v<U>)
+    return t < u;
+  else if constexpr (is_signed_v<T>)
+    return t < 0 ? false : UnsignedT(t) < u;
+  else
+    return u < 0 ? false : t < UnsignedU(u);
+}
+
+template<typename T, typename U>
+constexpr bool
+  me::cmp_greater(T t, U u)
+  noexcept
+{
+  return cmp_less(u, t);;
+}
+
+template<typename T, typename U>
+constexpr bool
+  me::cmp_less_equal(T t, U u)
+  noexcept
+{
+  return !cmp_greater(t, u);
+}
+
+template<typename T, typename U>
+constexpr bool
+  me::cmp_greater_equal(T t, U u)
+  noexcept
+{
+  return !cmp_less(t, u);
+}
+
+template<typename R, typename T>
+constexpr bool
+  me::in_range(T t)
+  noexcept
+{
+  return cmp_greater_equal(t, NumericLimits<R>::min()) && cmp_less_equal(t, NumericLimits<R>::max());
+}
+
+#endif // LIBME_UTILITY_HPP

@@ -9,7 +9,7 @@ CXXFLAGS = [
 	'-g',
 	'-Wall',
 	'-Wextra',
-	'-std=c++20']
+	'-std=c++2b']
 
 # Compiler flags for language Objective C
 OBJCFLAGS = [
