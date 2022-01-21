@@ -6,25 +6,25 @@
 namespace me {
 
   template<typename Type>
-  struct pointer_traits {
+  struct PointerTraits {
 
     typedef Type* Pointer;
     typedef Type ElementType;
     typedef ptrdiff_t DifferenceType;
 
-    template<typename Other>
-    struct rebind { typedef Other* other; };
+    template<typename O>
+    struct Rebind { typedef O* Other; };
 
   };
 
   template<typename From, typename To>
-  struct rebind_pointer {
+  struct RebindPointer {
 
-    typedef typename pointer_traits<From>::template rebind<To>::other type;
+    typedef typename PointerTraits<From>::template Rebind<To>::Other Type;
 
   };
 
 
 } // namespace me
 
-#endif
+#endif // LIBME_POINTER_TRAITS_HPP

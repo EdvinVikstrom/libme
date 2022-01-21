@@ -106,30 +106,30 @@ namespace me::detail {
     constexpr SizeType find(const CharT* str, SizeType pos, SizeType count) const;
     constexpr SizeType find(const CharT* str, SizeType pos = 0) const;
 
-    constexpr SizeType rfind(StringView view, SizeType pos = 0) const noexcept;
-    constexpr SizeType rfind(CharT c, SizeType pos = 0) const noexcept;
+    constexpr SizeType rfind(StringView view, SizeType pos = npos) const noexcept;
+    constexpr SizeType rfind(CharT c, SizeType pos = npos) const noexcept;
     constexpr SizeType rfind(const CharT* str, SizeType pos, SizeType count) const;
-    constexpr SizeType rfind(const CharT* str, SizeType pos = 0) const;
+    constexpr SizeType rfind(const CharT* str, SizeType pos = npos) const;
 
     constexpr SizeType find_first_of(StringView view, SizeType pos = 0) const noexcept;
     constexpr SizeType find_first_of(CharT c, SizeType pos = 0) const noexcept;
     constexpr SizeType find_first_of(const CharT* str, SizeType pos, SizeType count) const;
     constexpr SizeType find_first_of(const CharT* str, SizeType pos = 0) const;
 
-    constexpr SizeType find_last_of(StringView view, SizeType pos = 0) const noexcept;
-    constexpr SizeType find_last_of(CharT c, SizeType pos = 0) const noexcept;
-    constexpr SizeType find_last_of(const CharT* str, SizeType pos, SizeType count) const;
-    constexpr SizeType find_last_of(const CharT* str, SizeType pos = 0) const;
-
     constexpr SizeType find_first_not_of(StringView view, SizeType pos = 0) const noexcept;
     constexpr SizeType find_first_not_of(CharT c, SizeType pos = 0) const noexcept;
     constexpr SizeType find_first_not_of(const CharT* str, SizeType pos, SizeType count) const;
     constexpr SizeType find_first_not_of(const CharT* str, SizeType pos = 0) const;
 
-    constexpr SizeType find_last_not_of(StringView view, SizeType pos = 0) const noexcept;
-    constexpr SizeType find_last_not_of(CharT c, SizeType pos = 0) const noexcept;
+    constexpr SizeType find_last_of(StringView view, SizeType pos = npos) const noexcept;
+    constexpr SizeType find_last_of(CharT c, SizeType pos = npos) const noexcept;
+    constexpr SizeType find_last_of(const CharT* str, SizeType pos, SizeType count) const;
+    constexpr SizeType find_last_of(const CharT* str, SizeType pos = npos) const;
+
+    constexpr SizeType find_last_not_of(StringView view, SizeType pos = npos) const noexcept;
+    constexpr SizeType find_last_not_of(CharT c, SizeType pos = npos) const noexcept;
     constexpr SizeType find_last_not_of(const CharT* str, SizeType pos, SizeType count) const;
-    constexpr SizeType find_last_not_of(const CharT* str, SizeType pos = 0) const;
+    constexpr SizeType find_last_not_of(const CharT* str, SizeType pos = npos) const;
 
   };
 
@@ -138,7 +138,8 @@ namespace me::detail {
 namespace me {
 
   template<typename CharT, typename Traits>
-  constexpr bool operator==(detail::StringView<CharT, Traits> lhs, detail::StringView<CharT, Traits> rhs) noexcept;
+  constexpr bool operator==(detail::StringView<CharT, Traits> lhs,
+      detail::StringView<CharT, Traits> rhs) noexcept;
 
   template<typename CharT, typename Traits>
   constexpr CommonComparsionCategory_T<SynthThreeWayResult<detail::StringView<CharT, Traits>>>

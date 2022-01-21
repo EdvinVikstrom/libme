@@ -1204,6 +1204,8 @@ namespace me {
     return __builtin_is_constant_evaluated();
   }
 
+  template<typename> struct __Void { typedef void Type; };
+
 } // namespace me
 
 #endif

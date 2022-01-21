@@ -2,6 +2,7 @@
   #define LIBME_ALLOCATOR_HPP
 
 #include "TypeTraits.hpp"
+#include "PointerTraits.hpp"
 
 #include <stdlib.h>
 #include <new>
@@ -27,14 +28,90 @@ namespace me {
   template<typename Allocator>
   class AllocatorTraits {
 
+  private:
+
+    struct __Helper {
+
+#define __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(name, member) \
+  template<typename T, typename = void> struct name : FalseType { }; \
+  template<typename T> struct name<T, typename __Void<typename T:: member >::Type> : TrueType { };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_pointer, Pointer)
+      template<typename Alloc, typename T, bool = __has_pointer<Alloc>::value>
+      struct Pointer { typedef typename Alloc::Pointer Type; };
+      template<typename Alloc, typename T>
+      struct Pointer<Alloc, T, false> { typedef T* Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_const_pointer, ConstPointer)
+      template<typename Alloc, typename P, typename T, bool = __has_const_pointer<Alloc>::value>
+      struct ConstPointer { typedef typename Alloc::ConstPointer Type; };
+      template<typename Alloc, typename P, typename T>
+      struct ConstPointer<Alloc, P, T, false> { typedef typename PointerTraits<P>::template Rebind<const T> Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_void_pointer, VoidPointer)
+      template<typename Alloc, typename P, bool = __has_void_pointer<Alloc>::value>
+      struct VoidPointer { typedef typename Alloc::VoidPointer Type; };
+      template<typename Alloc, typename P>
+      struct VoidPointer<Alloc, P, false> { typedef typename PointerTraits<P>::template Rebind<void> Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_const_void_pointer, ConstVoidPointer)
+      template<typename Alloc, typename P, bool = __has_const_void_pointer<Alloc>::value>
+      struct ConstVoidPointer { typedef typename Alloc::ConstVoidPointer Type; };
+      template<typename Alloc, typename P>
+      struct ConstVoidPointer<Alloc, P, false> { typedef typename PointerTraits<P>::template Rebind<const void> Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_difference_type, DifferenceType)
+      template<typename Alloc, typename P, bool = __has_difference_type<Alloc>::value>
+      struct DifferenceType { typedef typename Alloc::DifferenceType Type; };
+      template<typename Alloc, typename P>
+      struct DifferenceType<Alloc, P, false> { typedef typename PointerTraits<P>::DifferenceType Type; }; // TODO
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__has_size_type, SizeType)
+      template<typename Alloc, typename T, bool = __has_size_type<Alloc>::value>
+      struct SizeType { typedef typename Alloc::SizeType Type; };
+      template<typename Alloc, typename T>
+      struct SizeType<Alloc, T, false> { typedef MakeUnsigned_T<T> Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__HasPropagateOnContainerCopyAssignment, PropagateOnContainerCopyAssignment)
+      template<typename Alloc, bool = __HasPropagateOnContainerCopyAssignment<Alloc>::value>
+      struct PropagateOnContainerCopyAssignment { typedef typename Alloc::PropagateOnContainerCopyAssignment Type; };
+      template<typename Alloc>
+      struct PropagateOnContainerCopyAssignment<Alloc, false> { typedef FalseType Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__HasPropagateOnContainerMoveAssignment, PropagateOnContainerMoveAssignment)
+      template<typename Alloc, bool = __HasPropagateOnContainerMoveAssignment<Alloc>::value>
+      struct PropagateOnContainerMoveAssignment { typedef typename Alloc::PropagateOnContainerMoveAssignment Type; };
+      template<typename Alloc>
+      struct PropagateOnContainerMoveAssignment<Alloc, false> { typedef FalseType Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__HasPropagateOnContainerSwap, PropagateOnContainerSwap)
+      template<typename Alloc, bool = __HasPropagateOnContainerSwap<Alloc>::value>
+      struct PropagateOnContainerSwap { typedef typename Alloc::PropagateOnContainerSwap Type; };
+      template<typename Alloc>
+      struct PropagateOnContainerSwap<Alloc, false> { typedef FalseType Type; };
+
+      __LIBME_ALLOCATOR_TRAITS_HAS_MEMBER(__HasIsAlwaysEqual, IsAlwaysEqual)
+      template<typename Alloc, bool = __HasIsAlwaysEqual<Alloc>::value>
+      struct IsAlwaysEqual { typedef typename Alloc::IsAlwaysEqual Type; };
+      template<typename Alloc>
+      struct IsAlwaysEqual<Alloc, false> { typedef typename IsEmpty<Alloc>::Type Type; };
+
+    };
+
   public:
 
+    typedef Allocator AllocatorType;
     typedef typename Allocator::ValueType ValueType;
-    typedef ValueType* Pointer;
-    typedef const ValueType* ConstPointer;
-    typedef size_t SizeType;
-    typedef ptrdiff_t DifferenceType;
-    typedef void* VoidPointer;
+    typedef typename __Helper::template Pointer<Allocator, ValueType>::Type Pointer;
+    typedef typename __Helper::template ConstPointer<Allocator, Pointer>::Type ConstPointer;
+    typedef typename __Helper::template VoidPointer<Allocator, Pointer>::Type VoidPointer;
+    typedef typename __Helper::template ConstVoidPointer<Allocator, Pointer>::Type ConstVoidPointer;
+    typedef typename __Helper::template DifferenceType<Allocator, Pointer>::Type DifferenceType;
+    typedef typename __Helper::template SizeType<Allocator, DifferenceType>::Type SizeType;
+    typedef typename __Helper::template PropagateOnContainerCopyAssignment<Allocator>::Type PropagateOnContainerCopyAssignment;
+    typedef typename __Helper::template PropagateOnContainerMoveAssignment<Allocator>::Type PropagateOnContainerMoveAssignment;
+    typedef typename __Helper::template PropagateOnContainerSwap<Allocator>::Type PropagateOnContainerSwap;
+    typedef typename __Helper::template IsAlwaysEqual<Allocator>::Type IsAlwaysEqual;
 
   public:
 
@@ -71,6 +148,7 @@ namespace me {
 /* -------------------------- */
 /* class me::DefaultAllocator */
 /* -------------------------- */
+
 template<typename Type>
 constexpr Type*
   me::DefaultAllocator<Type>::allocate(SizeType num)
@@ -90,11 +168,13 @@ constexpr void
   else
     ::free(ptr);
 }
+
 /* end class me::DefaultAllocator */
 
 /* ------------------------- */
 /* class me::AllocatorTraits */
 /* ------------------------- */
+
 template<typename Allocator>
 constexpr typename me::AllocatorTraits<Allocator>::ValueType*
   me::AllocatorTraits<Allocator>::allocate(SizeType num)
@@ -123,11 +203,13 @@ constexpr void
 {
   ptr->~ValueType();
 }
+
 /* end class me::AllocatorTraits */
 
 /* ------------------- */
 /* class me::TempValue */
 /* ------------------- */
+
 template<typename Type, typename Traits>
 template<typename... Args>
 constexpr me::TempValue<Type, Traits>::TempValue(Args&&... args)
@@ -152,6 +234,7 @@ constexpr Type* me::TempValue<Type, Traits>::address()
 {
   return reinterpret_cast<Type*>(m_value);
 }
+
 /* end class me::TempValue */
 
-#endif
+#endif // LIBME_ALLOCATOR_HPP
