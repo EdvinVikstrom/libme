@@ -103,7 +103,7 @@ namespace me {
     typedef Allocator AllocatorType;
     typedef typename Allocator::ValueType ValueType;
     typedef typename __Helper::template Pointer<Allocator, ValueType>::Type Pointer;
-    typedef typename __Helper::template ConstPointer<Allocator, Pointer>::Type ConstPointer;
+    typedef typename __Helper::template ConstPointer<Allocator, Pointer, ValueType>::Type ConstPointer;
     typedef typename __Helper::template VoidPointer<Allocator, Pointer>::Type VoidPointer;
     typedef typename __Helper::template ConstVoidPointer<Allocator, Pointer>::Type ConstVoidPointer;
     typedef typename __Helper::template DifferenceType<Allocator, Pointer>::Type DifferenceType;
